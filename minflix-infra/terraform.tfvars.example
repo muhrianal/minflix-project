@@ -1,0 +1,13 @@
+# Copy to terraform.tfvars (gitignored) to override defaults from variables.tf. All values are optional.
+region                       = "ap-southeast-1"
+image_tag                    = "latest"
+api_cpu                      = 512
+api_memory                   = 1024
+worker_cpu                   = 2048
+worker_memory                = 4096
+worker_ephemeral_storage_gib = 50
+docdb_instance_class         = "db.t3.medium"
+mq_instance_type             = "mq.t3.micro"
+cloudfront_price_class       = "PriceClass_200"
+api_desired_count            = 1
+worker_desired_count         = 1

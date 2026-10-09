@@ -1,0 +1,37 @@
+spring:
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/minflix
+      auto-index-creation: true
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+    listener:
+      simple:
+        concurrency: 1
+        max-concurrency: 1
+        prefetch: 1
+        default-requeue-rejected: false
+
+storage:
+  bucket: minflix
+  region: us-east-1
+  endpoint: http://localhost:9000
+  public-endpoint: http://localhost:9000
+  access-key: minioadmin
+  secret-key: minioadmin
+  playlist-base-url: http://localhost:9000/minflix
+
+jwt:
+  secret: dev-only-secret-change-me-0123456789abcdef
+
+app:
+  cors-allowed-origin: http://localhost:5173
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health

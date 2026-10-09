@@ -1,0 +1,80 @@
+# Dev environment only. Prod runs on AWS (see minflix-infra).
+services:
+  mongo:
+    image: mongo:7.0.14
+    ports:
+      - "${MONGO_PORT:-27017}:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_UI_PORT:-15672}:15672"
+
+  minio:
+    image: bitnamilegacy/minio:2025.7.23
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      # MinIO community has no per-bucket CORS; this is server-wide (browser PUT to presigned URL).
+      MINIO_API_CORS_ALLOW_ORIGIN: "*"
+    ports:
+      - "${MINIO_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - minio-data:/bitnami/minio/data
+
+  # One-shot: create the bucket and make hls/ anonymously readable.
+  minio-init:
+    image: bitnamilegacy/minio-client:2025.7.21
+    depends_on:
+      - minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        set -e
+        until mc alias set local http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD"; do sleep 1; done
+        mc mb -p local/minflix
+        mc anonymous set download local/minflix/hls
+
+  api:
+    build: .
+    image: minflix-be:dev
+    depends_on:
+      - mongo
+      - rabbitmq
+      - minio-init
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_DATA_MONGODB_URI: mongodb://mongo:27017/minflix
+      SPRING_RABBITMQ_HOST: rabbitmq
+      STORAGE_ENDPOINT: http://minio:9000
+      STORAGE_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      STORAGE_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    ports:
+      - "${API_PORT:-8080}:8080"
+
+  worker:
+    build: .
+    image: minflix-be:dev
+    depends_on:
+      - mongo
+      - rabbitmq
+      - minio-init
+    environment:
+      SPRING_PROFILES_ACTIVE: dev,worker
+      SPRING_MAIN_WEB_APPLICATION_TYPE: none
+      SPRING_DATA_MONGODB_URI: mongodb://mongo:27017/minflix
+      SPRING_RABBITMQ_HOST: rabbitmq
+      STORAGE_ENDPOINT: http://minio:9000
+      STORAGE_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      STORAGE_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+
+volumes:
+  mongo-data:
+  minio-data:

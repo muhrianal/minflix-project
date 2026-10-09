@@ -1,0 +1,20 @@
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.iml
+
+# minflix-be
+minflix-be/target/
+minflix-be/.env
+*.mp4
+
+# minflix-fe
+minflix-fe/node_modules/
+minflix-fe/dist/
+
+# minflix-infra (state and tfvars hold secrets)
+minflix-infra/.terraform/
+*.tfstate
+*.tfstate.*
+terraform.tfvars

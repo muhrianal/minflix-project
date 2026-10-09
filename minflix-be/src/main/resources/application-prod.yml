@@ -1,0 +1,44 @@
+# Every value comes from an env var injected by minflix-infra (see ../docs/CONTRACT.md). No defaults on purpose.
+spring:
+  data:
+    mongodb:
+      uri: ${MONGODB_URI}
+      auto-index-creation: true
+      ssl:
+        bundle: docdb
+  ssl:
+    bundle:
+      pem:
+        docdb:
+          truststore:
+            certificate: classpath:certs/global-bundle.pem
+  rabbitmq:
+    host: ${RABBITMQ_HOST}
+    port: 5671
+    username: ${RABBITMQ_USERNAME}
+    password: ${RABBITMQ_PASSWORD}
+    ssl:
+      enabled: true
+    listener:
+      simple:
+        concurrency: 1
+        max-concurrency: 1
+        prefetch: 1
+        default-requeue-rejected: false
+
+storage:
+  bucket: ${STORAGE_BUCKET}
+  region: ${AWS_REGION}
+  playlist-base-url: ${PUBLIC_BASE_URL}
+
+jwt:
+  secret: ${JWT_SECRET}
+
+app:
+  cors-allowed-origin: ${PUBLIC_BASE_URL}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
