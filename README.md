@@ -170,7 +170,7 @@ DRM and signed playback URLs, thumbnails, subtitles, autoscaling, a custom domai
 - **Origin-secret header and HTTPS between CloudFront and the ALB.**
 
 **Testing**
-- **Backend:** Testcontainers integration tests (MongoDB, RabbitMQ, MinIO, FFmpeg).
+- **Backend:** Testcontainers integration tests (MongoDB, RabbitMQ, MinIO, FFmpeg) on top of the existing unit tests.
 - **Frontend:** Playwright end-to-end tests, including real playback and quality switching.
 - **Load:** a load test of the upload → transcode path.
 
@@ -227,6 +227,7 @@ For a terminal-only walkthrough (register → upload → transcode → fetch the
 |---|---|
 | Backend API (auth, videos, presigned upload, owner checks, error format) | **Verified** against the local stack with `curl`, including error cases |
 | Transcoding (3 renditions, master playlist, 6 s aligned segments, correct content types, failure path) | **Verified** end to end locally |
+| Backend logic (JWT, auth, video rules, storage requests, FFmpeg command, failure handling) | **Unit-tested**: 41 tests, `./mvnw test` |
 | Frontend build, type safety, production build using relative API paths | **Verified** (`tsc`, `vite build`, bundle inspection) |
 | HLS player (rendition list, Auto, manual switch, "Auto (720p)" label) | **Verified** in Chrome against a public multi-bitrate test stream |
 | Frontend pages against the live backend (login, library polling, upload progress) | Not yet run together; manual checklist in [minflix-fe](minflix-fe/README.md#manual-test-checklist) |

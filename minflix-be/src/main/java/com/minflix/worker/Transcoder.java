@@ -54,32 +54,7 @@ public class Transcoder {
 
             Path out = workDir.resolve("hls");
             Files.createDirectories(out);
-            List<String> command = new ArrayList<>(List.of(
-                    "ffmpeg", "-y", "-i", input.toString(),
-                    "-filter_complex",
-                    "[0:v]split=3[s1][s2][s3];[s1]scale=-2:720[v720];[s2]scale=-2:480[v480];[s3]scale=-2:360[v360]"));
-            for (String rendition : List.of("[v720]", "[v480]", "[v360]")) {
-                command.addAll(List.of("-map", rendition));
-                if (hasAudio) {
-                    command.addAll(List.of("-map", "0:a:0"));
-                }
-            }
-            command.addAll(List.of(
-                    "-c:v", "libx264", "-preset", "veryfast",
-                    "-b:v:0", "2800k", "-b:v:1", "1400k", "-b:v:2", "800k",
-                    "-force_key_frames", "expr:gte(t,n_forced*6)"));
-            if (hasAudio) {
-                command.addAll(List.of("-c:a", "aac", "-b:a", "128k"));
-            }
-            command.addAll(List.of(
-                    "-f", "hls", "-hls_time", "6", "-hls_playlist_type", "vod",
-                    "-master_pl_name", "master.m3u8",
-                    "-hls_segment_filename", "%v/seg%d.ts",
-                    "-var_stream_map", hasAudio
-                            ? "v:0,a:0,name:720p v:1,a:1,name:480p v:2,a:2,name:360p"
-                            : "v:0,name:720p v:1,name:480p v:2,name:360p",
-                    "%v/index.m3u8"));
-            run(out, command);
+            run(out, ffmpegCommand(input.toString(), hasAudio));
 
             try (Stream<Path> files = Files.walk(out)) {
                 for (Path file : files.filter(Files::isRegularFile).toList()) {
@@ -96,6 +71,36 @@ public class Transcoder {
         } finally {
             FileSystemUtils.deleteRecursively(workDir);
         }
+    }
+
+    /** One ffmpeg pass: 720p/480p/360p HLS renditions plus master.m3u8; audio streams only when the input has audio. */
+    static List<String> ffmpegCommand(String input, boolean hasAudio) {
+        List<String> command = new ArrayList<>(List.of(
+                "ffmpeg", "-y", "-i", input,
+                "-filter_complex",
+                "[0:v]split=3[s1][s2][s3];[s1]scale=-2:720[v720];[s2]scale=-2:480[v480];[s3]scale=-2:360[v360]"));
+        for (String rendition : List.of("[v720]", "[v480]", "[v360]")) {
+            command.addAll(List.of("-map", rendition));
+            if (hasAudio) {
+                command.addAll(List.of("-map", "0:a:0"));
+            }
+        }
+        command.addAll(List.of(
+                "-c:v", "libx264", "-preset", "veryfast",
+                "-b:v:0", "2800k", "-b:v:1", "1400k", "-b:v:2", "800k",
+                "-force_key_frames", "expr:gte(t,n_forced*6)"));
+        if (hasAudio) {
+            command.addAll(List.of("-c:a", "aac", "-b:a", "128k"));
+        }
+        command.addAll(List.of(
+                "-f", "hls", "-hls_time", "6", "-hls_playlist_type", "vod",
+                "-master_pl_name", "master.m3u8",
+                "-hls_segment_filename", "%v/seg%d.ts",
+                "-var_stream_map", hasAudio
+                        ? "v:0,a:0,name:720p v:1,a:1,name:480p v:2,a:2,name:360p"
+                        : "v:0,name:720p v:1,name:480p v:2,name:360p",
+                "%v/index.m3u8"));
+        return command;
     }
 
     /** Runs a command in dir, logs its combined output line by line, returns stdout+stderr; fails on non-zero exit. */

@@ -98,6 +98,8 @@ SPRING_MAIN_WEB_APPLICATION_TYPE=none ./mvnw spring-boot:run -Dspring-boot.run.p
 ```
 Health check: `curl localhost:8080/actuator/health` → `{"status":"UP"}`.
 
+Tests: `./mvnw test` runs 41 unit tests in about 15 s. No Docker, MongoDB, RabbitMQ or FFmpeg needed (repositories, S3 and the queue are mocked).
+
 | Service | URL | Login |
 |---|---|---|
 | API | http://localhost:8080 | |
@@ -151,6 +153,14 @@ Against the local Docker stack:
 - **Failure path:** completing without an upload ends in `FAILED`, and the queue drains (no redelivery).
 - **CORS:** preflights from `http://localhost:5173` succeed on both the API and MinIO.
 - **Prod profile:** refuses to start when an env var is missing.
+- **Unit tests** (`./mvnw test`, 41 tests):
+  - `JwtServiceTest`: round trip, 24 h expiry, wrong key, tampered, expired and garbage tokens rejected.
+  - `AuthControllerTest`: register (BCrypt hash, token), duplicate 409, blank 400, malformed body 400, login success and both 401 cases.
+  - `VideoControllerTest`: 401 without or with a bad token, token subject used as owner, contract JSON shape without `rawKey`, error bodies, CORS preflight for the allowed origin only.
+  - `VideoServiceTest`: create (UPLOADING, raw key, extension handling, 400s), complete (owner, 403, 404, job enqueued), list, visibility rules on get.
+  - `StorageServiceTest`: presigned PUT (bucket/key, 15 min expiry, signed content type), download and upload requests.
+  - `TranscodeListenerTest`: failure marks FAILED and is never rethrown (no redelivery).
+  - `TranscoderTest`: FFmpeg ladder, 6 s keyframes, HLS layout, with and without audio.
 
 **Not verified:** production connectivity (DocumentDB TLS, Amazon MQ, S3 via the task role) until it is deployed.
 
