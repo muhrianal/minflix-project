@@ -70,4 +70,4 @@ Deletes everything, including all videos, users and the ECR images.
 
 **FE route 404/403 after refresh** (`/watch/...`). The `minflix-prod-spa-rewrite` CloudFront Function must be associated with the default behavior; after FE deploys, invalidate `/*`.
 
-**Video stuck in PROCESSING.** Worker not running (`worker_desired_count = 0`?) or crashing: check worker logs. FAILED means ffmpeg failed (e.g. no audio track) or the raw upload was missing.
+**Video stuck in PROCESSING.** Worker not running (`worker_desired_count = 0`?) or crashing: check worker logs. FAILED means ffmpeg failed (e.g. a corrupt or non-video file) or the raw upload was missing.

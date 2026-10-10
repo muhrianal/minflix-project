@@ -47,7 +47,7 @@ Check `curl -i -X OPTIONS http://localhost:9000/minflix/raw/x -H 'Origin: http:/
 The API allows only `app.cors-allowed-origin` (`http://localhost:5173`). A FE on another port is rejected.
 
 **Video stays FAILED / `Cannot run program "ffprobe"`**
-The worker needs `ffmpeg` and `ffprobe` on PATH. The Docker image has them. To run the worker from the IDE, install them first (`brew install ffmpeg`). Also: a video-only file (no audio track) fails by design (see decisions.md), as does calling `complete` before the upload finished.
+The worker needs `ffmpeg` and `ffprobe` on PATH. The Docker image has them. To run the worker from the IDE, install them first (`brew install ffmpeg`). Calling `complete` before the upload finished ends in FAILED.
 
 **`docker compose up --build` fails with `fork/exec .../docker-buildx: no such file or directory`**
 Compose needs the buildx plugin. Install it (e.g. `brew install docker-buildx` and link it into `~/.docker/cli-plugins/`), or build with the legacy builder: `DOCKER_BUILDKIT=0 docker build -t minflix-be:dev .` then `docker compose up -d`.

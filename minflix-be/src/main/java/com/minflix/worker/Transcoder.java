@@ -16,6 +16,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -46,24 +47,39 @@ public class Transcoder {
                     "ffprobe", "-v", "error", "-show_entries", "format=duration",
                     "-of", "default=noprint_wrappers=1:nokey=1", input.toString())).trim());
 
+            // Screen recordings and similar uploads often have no audio track; then the renditions are video-only.
+            boolean hasAudio = !run(workDir, List.of(
+                    "ffprobe", "-v", "error", "-select_streams", "a", "-show_entries", "stream=index",
+                    "-of", "csv=p=0", input.toString())).isBlank();
+
             Path out = workDir.resolve("hls");
             Files.createDirectories(out);
-            run(out, List.of(
+            List<String> command = new ArrayList<>(List.of(
                     "ffmpeg", "-y", "-i", input.toString(),
                     "-filter_complex",
-                    "[0:v]split=3[s1][s2][s3];[s1]scale=-2:720[v720];[s2]scale=-2:480[v480];[s3]scale=-2:360[v360]",
-                    "-map", "[v720]", "-map", "0:a",
-                    "-map", "[v480]", "-map", "0:a",
-                    "-map", "[v360]", "-map", "0:a",
+                    "[0:v]split=3[s1][s2][s3];[s1]scale=-2:720[v720];[s2]scale=-2:480[v480];[s3]scale=-2:360[v360]"));
+            for (String rendition : List.of("[v720]", "[v480]", "[v360]")) {
+                command.addAll(List.of("-map", rendition));
+                if (hasAudio) {
+                    command.addAll(List.of("-map", "0:a:0"));
+                }
+            }
+            command.addAll(List.of(
                     "-c:v", "libx264", "-preset", "veryfast",
                     "-b:v:0", "2800k", "-b:v:1", "1400k", "-b:v:2", "800k",
-                    "-force_key_frames", "expr:gte(t,n_forced*6)",
-                    "-c:a", "aac", "-b:a", "128k",
+                    "-force_key_frames", "expr:gte(t,n_forced*6)"));
+            if (hasAudio) {
+                command.addAll(List.of("-c:a", "aac", "-b:a", "128k"));
+            }
+            command.addAll(List.of(
                     "-f", "hls", "-hls_time", "6", "-hls_playlist_type", "vod",
                     "-master_pl_name", "master.m3u8",
                     "-hls_segment_filename", "%v/seg%d.ts",
-                    "-var_stream_map", "v:0,a:0,name:720p v:1,a:1,name:480p v:2,a:2,name:360p",
+                    "-var_stream_map", hasAudio
+                            ? "v:0,a:0,name:720p v:1,a:1,name:480p v:2,a:2,name:360p"
+                            : "v:0,name:720p v:1,name:480p v:2,name:360p",
                     "%v/index.m3u8"));
+            run(out, command);
 
             try (Stream<Path> files = Files.walk(out)) {
                 for (Path file : files.filter(Files::isRegularFile).toList()) {

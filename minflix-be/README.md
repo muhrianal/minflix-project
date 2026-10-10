@@ -51,7 +51,7 @@ Real request/response examples: [docs/api.md](docs/api.md).
 ## Transcoding pipeline
 
 1. Download `raw/{id}/original.<ext>` to a temp directory.
-2. `ffprobe` reads the duration.
+2. `ffprobe` reads the duration and checks for an audio track (video-only inputs get video-only renditions).
 3. **One FFmpeg command:** decode once, `split` into three scaled branches, encode H.264 + AAC, write HLS.
 4. Upload every file to `hls/{id}/...` with the correct `Content-Type` (`application/vnd.apple.mpegurl`, `video/mp2t`). CloudFront passes it through.
 5. Mark `READY` with `durationSec` and `masterPlaylistUrl`. Any failure marks `FAILED`, and the job is acknowledged so it is never redelivered in a loop.
@@ -108,7 +108,7 @@ Health check: `curl localhost:8080/actuator/health` → `{"status":"UP"}`.
 ## Quickstart: 60 seconds with curl
 
 ```bash
-# sample video (any mp4 with an audio track works)
+# sample video (any mp4 works, with or without audio)
 ffmpeg -f lavfi -i testsrc=duration=10:size=1280x720:rate=30 -f lavfi -i sine=duration=10 -c:v libx264 -c:a aac sample.mp4
 # no local ffmpeg? use the app image:
 # docker run --rm -v "$PWD":/w -w /w --entrypoint ffmpeg minflix-be:dev -f lavfi -i testsrc=duration=10:size=1280x720:rate=30 -f lavfi -i sine=duration=10 -c:v libx264 -c:a aac sample.mp4
@@ -158,7 +158,7 @@ Against the local Docker stack:
 
 - Testcontainers integration test of the full flow (MongoDB, RabbitMQ, MinIO, FFmpeg)
 - Retry for transient failures with a dead-letter queue
-- Validate uploads with `ffprobe` (and support video-only files) before queueing
+- Validate uploads with `ffprobe` before queueing
 - S3 multipart / resumable uploads; S3 event notifications instead of the `complete` call
 - CMAF/fMP4 + DASH output, HEVC/AV1 renditions, per-title ladders, thumbnails, subtitles
 - Signed playback URLs and DRM key handling

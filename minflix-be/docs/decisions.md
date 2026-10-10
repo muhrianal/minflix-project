@@ -14,7 +14,7 @@ One line each. Contract (`../../docs/CONTRACT.md`) wins over anything here.
 - Validation: only non-blank `email`/`password` and `title`/`filename`/`contentType` (400). Malformed JSON gives 400 `Malformed request body`.
 - Missing/invalid/expired JWT gives 401 `{"message":"Unauthorized"}`; not-owner gives 403 `{"message":"Forbidden"}`.
 - `durationSec` is the ffprobe container duration as a decimal number (e.g. `10.0`), not rounded.
-- Transcoder assumes the input has an audio track (`-map 0:a`); a video-only upload fails and is marked FAILED.
+- Transcoder probes for an audio track: with audio it keeps the first track (`0:a:0`); without (e.g. screen recordings) it produces video-only renditions.
 - ffmpeg uses `-force_key_frames expr:gte(t,n_forced*6)` so every rendition has a keyframe exactly every 6 s: segments are 6 s and aligned across renditions (needed for clean quality switching).
 - Listener `prefetch: 1` in addition to concurrency 1, so one worker never holds jobs it is not processing.
 - Video JSON is a separate `VideoResponse` record so `rawKey` never leaves the API.

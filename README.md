@@ -215,7 +215,7 @@ npm install
 npm run dev            # open http://localhost:5173
 ```
 
-Register, upload a short video **with an audio track**, and wait a few seconds for *Processing* to become *Ready*. Then play it and switch qualities.
+Register, upload a short video, and wait a few seconds for *Processing* to become *Ready*. Then play it and switch qualities.
 
 For a terminal-only walkthrough (register → upload → transcode → fetch the playlist with `curl`), see the [backend quickstart](minflix-be/README.md#quickstart-60-seconds-with-curl). Production deployment is covered in [minflix-infra/docs/deploy.md](minflix-infra/docs/deploy.md).
 
